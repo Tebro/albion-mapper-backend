@@ -37,11 +37,12 @@ func IsValidZone(zone Zone) bool {
 
 // Portal describes a roads portal between two zones
 type Portal struct {
-	id      int
-	Source  string    `json:"source"`
-	Target  string    `json:"target"`
-	Size    int       `json:"size"`
-	Expires time.Time `json:"expires"`
+	id       int
+	Source   string    `json:"source"`
+	Target   string    `json:"target"`
+	Size     int       `json:"size"`
+	Expires  time.Time `json:"expires"`
+	TimeLeft float64   `json:"timeLeft"`
 }
 
 func zoneNameInZones(name string, zones []Zone) bool {
@@ -132,6 +133,9 @@ func GetPortals() ([]Portal, error) {
 		if err != nil {
 			return []Portal{}, err
 		}
+
+		now := time.Now()
+		portal.TimeLeft = portal.Expires.Sub(now).Minutes()
 		portals = append(portals, portal)
 	}
 
