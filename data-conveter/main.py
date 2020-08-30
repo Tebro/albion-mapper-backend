@@ -6,7 +6,7 @@ def handle_json(data):
   cluster = data["world"]["clusters"]["cluster"]
   selected_fields = [{"name": m["@displayname"], "type": m["@type"]} for m in cluster]
 
-  filtered_by_type = [o for o in selected_fields if (o["type"].startswith("OPENPVP") or o["type"].startswith("TUNNEL"))]
+  filtered_by_type = [o for o in selected_fields if (o["type"].startswith("OPENPVP") or o["type"].startswith("TUNNEL") or o["type"] == "SAFEAREA")]
 
   print(json.dumps(filtered_by_type))
 
@@ -17,6 +17,7 @@ def handle_json(data):
   #name_to_find = "Whitebank Cross"
   #name_to_find = "Qiient-Qinsum"
   #name_to_find = "Wyre Forest"
+  #name_to_find = "Oakcopse"
   #print([o for o in selected_fields if o["name"] == name_to_find])
 
 

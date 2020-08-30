@@ -1,7 +1,10 @@
 package albion
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/tebro/albion-mapper-backend/db"
@@ -11,28 +14,44 @@ import (
 type Zone struct {
 	Name  string `json:"name"`
 	Color string `json:"color"`
-	Tier  int    `json:"tier"`
 }
 
 var validColors = []string{"black", "red", "yellow", "blue", "road"}
-var validTiers = []int{4, 5, 6, 7, 8}
+var zones = []Zone{}
 
-// IsValidZone checks if the color and tier are valid options
-func IsValidZone(zone Zone) bool {
-	validColor := false
-	for _, s := range validColors {
-		if zone.Color == s {
-			validColor = true
+type dataZone struct {
+	Name string `json:"name"`
+	Kind string `json:"type"`
+}
+
+// LoadZones reads the "data-dump.json" file and loads it into memory
+func LoadZones() error {
+	dat, err := ioutil.ReadFile("data-dump.json")
+	if err != nil {
+		return err
+	}
+	var raw []dataZone
+	err = json.Unmarshal(dat, &raw)
+	if err != nil {
+		return err
+	}
+	for _, z := range raw {
+		if z.Kind == "SAFEAREA" {
+			zones = append(zones, Zone{Name: z.Name, Color: "blue"})
+			continue
+		}
+		parts := strings.Split(z.Kind, "_")
+		if parts[0] == "TUNNEL" {
+			zones = append(zones, Zone{Name: z.Name, Color: "road"})
+			continue
+		}
+
+		if parts[0] == "OPENPVP" {
+			zones = append(zones, Zone{Name: z.Name, Color: strings.ToLower(parts[1])})
 		}
 	}
-	validTier := false
-	for _, i := range validTiers {
-		if zone.Tier == i {
-			validTier = true
-		}
-	}
 
-	return validColor && validTier
+	return nil
 }
 
 // Portal describes a roads portal between two zones
@@ -60,52 +79,14 @@ func IsValidPortal(portal Portal) (bool, error) {
 		return false, nil
 	}
 
-	zones, err := GetZones()
-	if err != nil {
-		return false, err
-	}
+	zones := GetZones()
 
 	return zoneNameInZones(portal.Source, zones) && zoneNameInZones(portal.Target, zones), nil
 }
 
 // GetZones returns all zones in the DB
-func GetZones() ([]Zone, error) {
-	db, err := db.GetDb()
-	if err != nil {
-		return []Zone{}, err
-	}
-	rows, err := db.Query("SELECT name, color, tier from zones;")
-	if err != nil {
-		return []Zone{}, err
-	}
-	defer rows.Close()
-
-	zones := []Zone{}
-	for rows.Next() {
-		var zone Zone
-		err = rows.Scan(&zone.Name, &zone.Color, &zone.Tier)
-		if err != nil {
-			return []Zone{}, err
-		}
-		zones = append(zones, zone)
-	}
-
-	return zones, nil
-}
-
-// SetZone adds or updates a zones information
-func SetZone(zone Zone) error {
-	db, err := db.GetDb()
-	if err != nil {
-		return err
-	}
-	q, err := db.Query("REPLACE INTO zones (name, color, tier) VALUES (?, ?, ?);", zone.Name, zone.Color, zone.Tier)
-	if err != nil {
-		return err
-	}
-	defer q.Close()
-
-	return err
+func GetZones() []Zone {
+	return zones
 }
 
 // GetPortals returns the portals in the DB

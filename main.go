@@ -28,6 +28,11 @@ func main() {
 		log.Fatalf("Failed to setup database: %v\n", err)
 	}
 
+	err = albion.LoadZones()
+	if err != nil {
+		log.Fatalf("Failed to load the data dump: %v", err)
+	}
+
 	go func() {
 		log.Println("Starting cleaner")
 		for {

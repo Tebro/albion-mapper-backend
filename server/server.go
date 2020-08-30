@@ -73,41 +73,13 @@ func getZonesHandler(w http.ResponseWriter, r *http.Request) {
 		send401(w)
 		return
 	}
-	zones, err := albion.GetZones()
-	if err != nil {
-		send500AndLog(w, err)
-		return
-	}
+	zones := albion.GetZones()
 	json, err := json.Marshal(zones)
 	if err != nil {
 		send500AndLog(w, err)
 		return
 	}
 	fmt.Fprint(w, string(json))
-}
-
-func setZoneHandler(w http.ResponseWriter, r *http.Request) {
-	if !isAuth(r) {
-		send401(w)
-		return
-	}
-	var zone albion.Zone
-	err := json.NewDecoder(r.Body).Decode(&zone)
-	if err != nil {
-		send400AndLog(w, err)
-		return
-	}
-	if !albion.IsValidZone(zone) {
-		send400AndLog(w, fmt.Errorf("Not valid zone: %v", zone))
-		return
-	}
-	err = albion.SetZone(zone)
-	if err != nil {
-		send500AndLog(w, err)
-		return
-	}
-	w.WriteHeader(http.StatusAccepted)
-	fmt.Fprint(w, "ACCEPTED")
 }
 
 func getPortalsHandler(w http.ResponseWriter, r *http.Request) {
@@ -176,7 +148,6 @@ func addPortalHandler(w http.ResponseWriter, r *http.Request) {
 func setupRoutes(r *mux.Router) {
 	r.HandleFunc("/", rootHandler)
 	r.HandleFunc("/health", healthHandler)
-	r.HandleFunc("/api/zone", setZoneHandler).Methods("POST")
 	r.HandleFunc("/api/zone", getZonesHandler)
 	r.HandleFunc("/api/portal", addPortalHandler).Methods("POST")
 	r.HandleFunc("/api/portal", getPortalsHandler)

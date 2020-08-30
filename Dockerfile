@@ -11,5 +11,6 @@ FROM scratch
 
 COPY --from=builder /bin/server /bin/server
 ADD ./migrations /migrations
+ADD ./data-dump.json /data-dump.json
 
 ENTRYPOINT [ "/bin/server" ]
