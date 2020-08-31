@@ -129,7 +129,7 @@ func AddPortal(portal Portal) error {
 	if err != nil {
 		return err
 	}
-	q, err := db.Query("INSERT INTO portals (source, target, size, expires) VALUES (?, ?, ?, ?);", portal.Source, portal.Target, portal.Size, portal.Expires)
+	q, err := db.Query("REPLACE INTO portals (source, target, size, expires) VALUES (?, ?, ?, ?);", portal.Source, portal.Target, portal.Size, portal.Expires)
 	defer q.Close()
 
 	return err
