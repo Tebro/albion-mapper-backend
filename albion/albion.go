@@ -10,18 +10,44 @@ import (
 	"github.com/tebro/albion-mapper-backend/db"
 )
 
+// Resource describes a resource node
+type Resource struct {
+	Name string `json:"name"`
+	Tier string `json:"tier"`
+}
+
 // Zone describes a map in albion
 type Zone struct {
-	Name  string `json:"name"`
-	Color string `json:"color"`
+	Name      string     `json:"name"`
+	Color     string     `json:"color"`
+	Type      string     `json:"type"`
+	Markers   []string   `json:"markers"`
+	Resources []Resource `json:"resources"`
 }
 
 var validColors = []string{"black", "red", "yellow", "blue", "road"}
 var zones = []Zone{}
 
+var markerMapping = map[string]string{
+	"roads_of_avalon_solo_pve":  "Solo PvE content",
+	"roads_of_avalon_group_pve": "Group PvE content",
+	"roads_of_avalon_raid_pve":  "Raid PvE content",
+}
+
+type dataResources struct {
+	Name string `json:"@name"`
+	Tier string `json:"@tier"`
+}
+
+type mapMarker struct {
+	Type string `json:"@type"`
+}
+
 type dataZone struct {
-	Name string `json:"name"`
-	Kind string `json:"type"`
+	Name      string          `json:"name"`
+	Type      string          `json:"type"`
+	Resources []dataResources `json:"resources"`
+	Markers   []mapMarker     `json:"markers"`
 }
 
 // LoadZones reads the "data-dump.json" file and loads it into memory
@@ -36,19 +62,34 @@ func LoadZones() error {
 		return err
 	}
 	for _, z := range raw {
-		if z.Kind == "SAFEAREA" {
-			zones = append(zones, Zone{Name: z.Name, Color: "blue"})
-			continue
-		}
-		parts := strings.Split(z.Kind, "_")
-		if parts[0] == "TUNNEL" {
-			zones = append(zones, Zone{Name: z.Name, Color: "road"})
-			continue
+		zone := Zone{Name: z.Name, Type: z.Type}
+
+		if z.Type == "SAFEAREA" {
+			zone.Color = "blue"
+		} else {
+			parts := strings.Split(z.Type, "_")
+			if parts[0] == "TUNNEL" {
+				zone.Color = "road"
+			}
+
+			if parts[0] == "OPENPVP" {
+				zone.Color = strings.ToLower(parts[1])
+			}
 		}
 
-		if parts[0] == "OPENPVP" {
-			zones = append(zones, Zone{Name: z.Name, Color: strings.ToLower(parts[1])})
+		for _, marker := range z.Markers {
+			name := marker.Type
+			if mappedName, ok := markerMapping[name]; ok {
+				name = mappedName
+			}
+			zone.Markers = append(zone.Markers, name)
 		}
+
+		for _, r := range z.Resources {
+			zone.Resources = append(zone.Resources, Resource{Name: r.Name, Tier: r.Tier})
+		}
+
+		zones = append(zones, zone)
 	}
 
 	return nil
