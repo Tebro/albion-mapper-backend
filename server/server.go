@@ -24,8 +24,12 @@ type apiPortal struct {
 }
 
 var password = os.Getenv("AUTH_PASSWORD")
+var publicRead = os.Getenv("PUBLIC_READ") == "true"
 
 func isAuth(r *http.Request) bool {
+	if publicRead && r.Method == "GET" {
+		return true
+	}
 	header := r.Header["X-Tebro-Auth"]
 	for _, s := range header {
 		if s == password {
@@ -79,6 +83,7 @@ func getZonesHandler(w http.ResponseWriter, r *http.Request) {
 		send500AndLog(w, err)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, string(json))
 }
 
@@ -97,6 +102,7 @@ func getPortalsHandler(w http.ResponseWriter, r *http.Request) {
 		send500AndLog(w, err)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, string(json))
 }
 
@@ -145,9 +151,18 @@ func addPortalHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "ACCEPTED")
 }
 
+func configHandler(w http.ResponseWriter, r *http.Request) {
+	data, _ := json.Marshal(map[string]interface{}{
+		"publicRead": publicRead,
+	})
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, "%s", data)
+}
+
 func setupRoutes(r *mux.Router) {
 	r.HandleFunc("/", rootHandler)
 	r.HandleFunc("/health", healthHandler)
+	r.HandleFunc("/api/config", configHandler)
 	r.HandleFunc("/api/zone", getZonesHandler)
 	r.HandleFunc("/api/portal", addPortalHandler).Methods("POST")
 	r.HandleFunc("/api/portal", getPortalsHandler)
