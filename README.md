@@ -1,3 +1,7 @@
+# Project moved
+
+This project has been superceeded by: https://github.com/Portaler-Zone
+
 # Albion mapper backend
 
 Written in Go, using Go version 1.15
